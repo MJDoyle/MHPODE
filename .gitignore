@@ -4,10 +4,12 @@
 #
 
 /[Bb]uild/
+/[Dd]ebug/
 /[Rr]elease/
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+/ipch/
 
 #Debug/Release
 modularroboticsode/Debug/
