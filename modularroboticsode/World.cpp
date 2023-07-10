@@ -96,6 +96,7 @@ static void nearCallback (void *data, dGeomID o1, dGeomID o2)
 
 //WORLD CLASS
 
+//Constructor
 World::World(std::vector<std::shared_ptr<Parameters>> parameters, bool graphicsEnabled) : m_graphicsEnabled(graphicsEnabled), m_parameters(parameters), m_trialCounter(0), m_parametersCounter(0), m_delayCounter(0)
 {
 	std::cout << "Setting up world" << std::endl;
@@ -279,6 +280,7 @@ void World::Update()
 	m_trialLength += PHYSICS_STEP_TIME;
 }
 
+//The main world update function. Updates the robot
 void World::Step()
 {
 
@@ -313,19 +315,6 @@ void World::Step()
 	//Draw if needed
 	if (m_graphicsEnabled)
 		Draw();
-
-	//Check robot position to make sure it hasn't flown to ifinity
-	if  (m_robots.back()->GetPosition().Getx() < -100000 ||
-		 m_robots.back()->GetPosition().Getx() > 100000 ||
-		 m_robots.back()->GetPosition().Gety() < -100000 ||
-		 m_robots.back()->GetPosition().Gety() > 100000 ||
-		 m_robots.back()->GetPosition().Getz() < -100000 ||
-		 m_robots.back()->GetPosition().Getz() > 100000)
-	{
-		std::cout << "ERROR - ROBOT OUT OF POSITION" << std::endl;
-
-		while (true);
-	}
 }
 
 //Handles collisions - see ODE wiki
@@ -397,27 +386,29 @@ void World::Reset()
 
 void World::SetupRobot()
 {
-	std::cout << "Check1" << std::endl;
-
 	std::vector<Vector3Df> scaledModuleMap;
 
 	std::vector<Vector3Di> unscaledModuleMap;
 	
+	//Two module maps are created, one with a unit distance between adjacent cells and one with a module width distance between adjacent cells
+
 	//Default map, just in case nothing else is created
 
 	scaledModuleMap.push_back(Vector3Df(0, 0, 0));
 
 	unscaledModuleMap.push_back(Vector3Di(0, 0, 0));
 
+	//Create a 'convex' robot - that is, a robot for which no straight line exists that is aligned with one of the cardinal axes and can pass through an external of the robot more than twice (no 'holes')
 	if ((*m_currentParameters)->m_robotType == CONVEX)
 	{
 		int numModules = (*m_currentParameters)->m_cbRtModules * (*m_currentParameters)->m_cbRtModules * (*m_currentParameters)->m_cbRtModules;
+
+
 
 		for (int i = 0; i != numModules - 1; i ++)
 		{
 			while (true)
 			{
-
 				//Select random module from exisiting modules
 
 				int moduleToAttach = RandFloat() * scaledModuleMap.size();
@@ -444,13 +435,14 @@ void World::SetupRobot()
 					}
 				}
 
+				//Add the new module to a temporary map before confirming it will be added permenantly
 				std::vector<Vector3Di> moduleMapPlusNewModule = unscaledModuleMap;
 
 				moduleMapPlusNewModule.push_back(newPosition);
 
 				//Check that orthogonal convexity is preserved
 
-				//Find the 6 extremum modules
+				//After adding a new module, determine the 6 extremum modules
 
 				int extrema[6] = {0, 0, 0, 0, 0, 0};
 
@@ -477,29 +469,24 @@ void World::SetupRobot()
 
 				//Check in all 6 directions from all modules to the extremum module that there is no hole
 
-				//std::cout << "Position: "  << newPosition.Getx() << " " << newPosition.Gety() << " " << newPosition.Getz() << std::endl;
-
-
-
-
+				//Iterate across all modules in the temporary map
 				for (auto modIt = moduleMapPlusNewModule.begin(); modIt != moduleMapPlusNewModule.end(); modIt ++)
 				{
+					//Iterate across each of the cartesian axes (in both directions)
 					for (int direction = 0; direction != 6; direction ++)
 					{
+						//Starting checking at this module position
 						Vector3Di positionToCheck = *modIt;
 
 						bool hasHole = false;
 
-						//std::cout << "Direction: " << directions[direction].Getx() << " " << directions[direction].Gety() << " " << directions[direction].Getz() << std::endl;
-
-						//std::cout << "PosToCheck: " << positionToCheck[direction / 2] << "       extrema: " << extrema[direction] << std::endl;
-
+						//Iterate along each axes until the extrema in this direction is reached
 						while (positionToCheck[direction / 2] != extrema[direction])
 						{
+							//Move to the next grid position 
 							positionToCheck = positionToCheck + Vector3Di(directions[direction].Getx(), directions[direction].Gety(), directions[direction].Getz());
 
-							//std::cout << "Check: " << positionToCheck.Getx() << " " << positionToCheck.Gety() << " " << positionToCheck.Getz() << std::endl;
-
+							//Check if a module is contained within the map at this position
 							bool mapContainsModule = false;
 
 							for (auto mod2It = moduleMapPlusNewModule.begin(); mod2It != moduleMapPlusNewModule.end(); mod2It ++)
@@ -512,9 +499,11 @@ void World::SetupRobot()
 								}
 							}
 
+							//If a second hole is found, the robot is not convex and so this module cannot be attached
 							if (hasHole && mapContainsModule)
 								canAttach = false;
 
+							//If no module is present here, there is a hole
 							if (!mapContainsModule)
 								hasHole = true;
 						}
@@ -522,7 +511,7 @@ void World::SetupRobot()
 				}
 		
 
-
+				//If there is no reason that the module cannot be attached in this position, then add it to both module maps
 				if (canAttach)
 				{
 					unscaledModuleMap.push_back(newPosition);
@@ -659,6 +648,9 @@ void World::SetupRobot()
 	//	}
 	//}
 
+
+
+	//Create a random robot. Each module must form an unbroken set of face-to-face connections with every other module. Otherwise, there are no constraints on the topology
 	else if ((*m_currentParameters)->m_robotType == RANDOM)
 	{
 		int numModules = (*m_currentParameters)->m_cbRtModules * (*m_currentParameters)->m_cbRtModules * (*m_currentParameters)->m_cbRtModules;
@@ -691,6 +683,7 @@ void World::SetupRobot()
 					}
 				}
 
+				//If there is no reason that the module cannot be attached in this position, then add it to both module maps
 				if (canAttach)
 				{
 					unscaledModuleMap.push_back(newPosition);
@@ -702,6 +695,7 @@ void World::SetupRobot()
 		}
 	}
 
+	//Create a cubic robot
 	else if ((*m_currentParameters)->m_robotType == CUBIC)
 	{
 		scaledModuleMap.clear();
@@ -720,27 +714,22 @@ void World::SetupRobot()
 		}
 	}
 
-	/*for (auto mod = scaledModuleMap.begin(); mod != scaledModuleMap.end(); mod ++)
-	{
-		std::cout << mod->Getx() << " " << mod->Gety() << " " << mod->Getz() << std::endl;
-	}
-
-	while (true);*/
-
-	//Reseed so that seed is always consistent for both random robot generation and 
+	//Reseed so that seed is always consistent for both random robot generation and generation of initial conditions
 	SeedRand((*m_currentParameters)->m_startingSeed + m_trialCounter);
 
 	//Add the robot
 
 	MatrixNMf orientation = GenerateStartingOrientation();
 
+	//Shift the positions of the scaled module map so that the center of mass lies at (0, 0, 0)
 	std::vector<Vector3Df> convertedModuleMap = ConvertMap(scaledModuleMap);
 
 	m_robots.push_back(std::shared_ptr<Robot>(new Robot(m_worldID, m_spaceID, m_obstacleSpaceID, convertedModuleMap, unscaledModuleMap, STARTING_POSITION, orientation, *m_currentParameters)));
 
-	std::cout << "Check2" << std::endl;
+
 }
 
+//Set up the obstacles within the environment depending on the scenario patameter
 void World::SetupObstacles()
 {
 	//Set up obstacles depending on the scenario type
@@ -749,61 +738,16 @@ void World::SetupObstacles()
 		GenerateSlalomObstacles();
 }
 
+//Generate the robot target position, with a distance from the starting point determined by the target distance parameter and half the robot size (so that the distance to target point is approximately independent of robot size)
 void World::SetupTargetPosition()
 {
 	//Target point is starting position + target distance + 1/2 * robot side length
 	m_targetPosition = STARTING_POSITION + Vector3Df((*m_currentParameters)->m_targetDistance + 0.5 * float((*m_currentParameters)->m_cbRtModules) * (*m_currentParameters)->m_moduleSize, 0, 0);
 }
 
-//Takes a module map and checks that's its correct (returns the correct version)
+//Iterates through a module map, calculates the center of mass position, and creates a new map with the space spacing and a center of mass of (0, 0, 0)
 std::vector<Vector3Df> World::ConvertMap(std::vector<Vector3Df> map)
 {
-	//std::cout << "Converting map" << std::endl;
-	//It runs through the map in each direciton (x, y, z) and checks the largest and smallest position in each direction
-	//A correct map should have the largest position = -the smallest position
-	//If this isn't the case all the positions get moved along and corrected
-
-	//Mininmum and maximum positions
-	/*float min[3] = {map.begin()->Getx(), map.begin()->Gety(), map.begin()->Getz()};
-	float max[3] = {map.begin()->Getx(), map.begin()->Gety(), map.begin()->Getz()}; 
-
-	for (std::vector<Vector3Df>::iterator mapIt = map.begin(); mapIt != map.end(); mapIt++)
-	{
-		for (int i = 0; i != 3; i ++)
-		{
-			if ((*mapIt)[i] > max[i])
-			{
-				max[i] = (*mapIt)[i];
-			}
-
-			if ((*mapIt)[i] < min[i])
-			{
-				min[i] = (*mapIt)[i];
-			}
-		}
-	}
-
-	float difference[3];
-
-	for (int i = 0; i != 3; i++)
-	{
-		difference[i] = max[i] + min[i];
-	}
-
-		
-	std::vector<Vector3Df> newMap;
-
-	for (std::vector<Vector3Df>::iterator mapIt = map.begin(); mapIt != map.end(); mapIt ++)
-	{
-		Vector3Df newVec;
-
-		newVec.SetCoords((*mapIt)[0] - difference[0]/2, (*mapIt)[1] - difference[1]/2, (*mapIt)[2] - difference[2]/2);
-
-		newMap.push_back(newVec);
-	}
-
-	return newMap;*/
-
 	//Calculate center of mass
 
 	Vector3Df CoM(0, 0, 0);
@@ -819,7 +763,7 @@ std::vector<Vector3Df> World::ConvertMap(std::vector<Vector3Df> map)
 	CoM.Sety(CoM.Gety() / map.size());
 	CoM.Setz(CoM.Getz() / map.size());
 
-	//center of mas should be 0, 0, 0 and everything else scaled around it
+	//center of mass should be 0, 0, 0 and everything else scaled around it
 
 	std::vector<Vector3Df> newMap;
 
@@ -831,6 +775,7 @@ std::vector<Vector3Df> World::ConvertMap(std::vector<Vector3Df> map)
 	return newMap;
 }
 
+//Draw all of the objects within the environment
 void World::Draw()
 {
 	//Draw target sphere
@@ -867,6 +812,7 @@ void World::Draw()
 	}
 }
 
+//Check if the robot has reached the target position - check if the target point is within the axis-aligned bounding box (AABB) of the robot
 bool World::CheckVictoryConditions()
 {
 	//target point in robot body coordsinates
@@ -904,6 +850,7 @@ bool World::CheckVictoryConditions()
 	return false;
 }
 
+//Add a new obstacle to the environment that the robot can collide with
 void World::AddNewObstacle(Vector3Df size, Vector3Df position)
 {
 	//Add an obstacle. Depending on the scenario, the obstacles should be kinematic or not
@@ -915,6 +862,7 @@ void World::AddNewObstacle(Vector3Df size, Vector3Df position)
 		m_obstacles.push_back(std::shared_ptr<Obstacle>(new Obstacle(size, position, m_worldID, m_obstacleSpaceID, true)));
 }
 
+//Generate a random debris field
 void World::GenerateRandomDebris()
 {
 	//Each piece of debris needs random position, random rotation and random size
@@ -941,48 +889,15 @@ void World::GenerateRandomDebris()
 	}
 }
 
-void World::GenerateRandomDebrisII()
-{
-	for (int i = 0; i != DEBRIS_NUMBER; i ++)
-	{
-		Vector3Df position;
-
-		position.Setx(2 + RandFloat() * (m_targetPosition[0] - 4));
-		position.Sety(2 + RandFloat() * (m_targetPosition[1] - 4));
-		position.Setz(10);
-	}
-}
-
-void World::GenerateBall()
-{
-	//m_obstacles.push_back(std::shared_ptr<Obstacle>(new Obstacle(Vector3Df(0, 0, 1), STARTING_POSITION, m_worldID, m_obstacleSpaceID, false)));
-
-	m_obstacles.push_back(std::shared_ptr<Obstacle>(new Obstacle(Vector3Df(0, 0, 3), STARTING_POSITION, m_worldID, m_obstacleSpaceID, false)));
-}
-
+//Generate two obstacles for the slalom
 void World::GenerateSlalomObstacles()
 {
-	//AddNewObstacle(Vector3Df(1, 50, 50), Vector3Df( 17, 28, 130));
-
-	////AddNewObstacle(Vector3Df(1, 50, 50), Vector3Df( 31.25, -28, 130));
-
-	//AddNewObstacle(Vector3Df(1, 50, 50), Vector3Df( 45.5, -28, 130));
-
-	//62.5
-
 	AddNewObstacle(Vector3Df(0.5, 0.5, 0.5), STARTING_POSITION + Vector3Df(1 + RandFloat() * 0.5, -0.25 + RandFloat() * 0.5, -0.25 + RandFloat() * 0.5));
 
 	AddNewObstacle(Vector3Df(0.5, 0.5, 0.5), STARTING_POSITION + Vector3Df(4 - RandFloat() * 0.5, -0.25 + RandFloat() * 0.5, -0.25 + RandFloat() * 0.5));
-
-	//AddNewObstacle(Vector3Df(0.5, 0.5, 0.5), STARTING_POSITION + Vector3Df(1, RandFloat() * 0.5, RandFloat() * 0.5));
-
-	//AddNewObstacle(Vector3Df(0.5, 0.5, 0.5), STARTING_POSITION + Vector3Df(4, RandFloat() * 0.5, RandFloat() * 0.5));
-
-	//AddNewObstacle(Vector3Df(0.1, 0.1, 0.1), Vector3Df( 42.5, RandFloat() * 16 - 8, 130 + RandFloat() * 16 - 8));
-
-	//AddNewObstacle(Vector3Df(0.1, 0.1, 0.1), Vector3Df( 20, RandFloat() * 16 - 8, 130 + RandFloat() * 16 - 8));
 }
 
+//Generate the starting oreienation of the robot depending on the run parameters - either random or fixed
 MatrixNMf World::GenerateStartingOrientation()
 {
 

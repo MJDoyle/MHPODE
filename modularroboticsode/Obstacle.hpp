@@ -5,17 +5,18 @@
 
 class Obstacle
 {
-
 	public:
 
+		//Constructor
 		Obstacle(Vector3Df size, Vector3Df position, dWorldID& worldID, dSpaceID& spaceID, bool kinematic);
 
+		//Destructor
 		~Obstacle();
 
+		//Draw the obstacle
 		void Draw();
 
-		void Update();
-
+		//Get the obstacle position in world space
 		Vector3Df GetPosition();
 
 	private:

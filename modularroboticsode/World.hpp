@@ -28,14 +28,9 @@ class World
 		void SetupObstacles();
 
 		//Various obstacle-adding functions. Some deprecated
-
 		void AddNewObstacle(Vector3Df size, Vector3Df position);
 
 		void GenerateRandomDebris();
-
-		void GenerateRandomDebrisII();
-
-		void GenerateBall();
 
 		void GenerateSlalomObstacles();
 

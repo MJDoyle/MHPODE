@@ -32,9 +32,9 @@ int main (int argc, char **argv)
 
 	std::vector<std::shared_ptr<Parameters>> parameters;	//List of run parameters - number of trials, robot type, sensors used, etc.
 
-
-
 	parameters.push_back(std::shared_ptr<Parameters>(new Parameters()));
+
+	//An example set of parameters
 
 	parameters.back()->m_scenario = OBSTACLES;	
 	parameters.back()->m_controller = DECENTRALIZED_BASIC;

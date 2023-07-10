@@ -7,49 +7,45 @@ class Face
 {
 	public:
 
-		//Constructor
+		//Constructor if module geoms are provided
 		Face(Vector3Df position, Vector3Df normal, dMass mass, dSpaceID& robotSpace, dSpaceID& obstacleSpace, dBodyID& body, dGeomID& geom, std::vector<dGeomID> moduleGeoms, bool external, std::shared_ptr<Parameters> parameters);
 
 		//Contructor without individual module geoms
 		Face(Vector3Df position, Vector3Df normal, dMass mass, dSpaceID& robotSpace, dSpaceID& obstacleSpace, dBodyID& body, bool external, std::shared_ptr<Parameters> parameters);
 
-
+		//Check the target sensor for this face. Returns true if target is occluded
 		bool GetTargetSensorInput(Vector3Df targetPosition);
 
+		//Check the obstacle sensor for this face. Returns true if obstacle is detected
 		bool GetObstacleSensorInput();
 
+		//Get various properties of the face
 		Vector3Df GetPosition() {return m_position;}
-
 		Vector3Df GetNormal() {return m_normal;}
 		Vector3Df GetUnNormal() {return m_unNormal;}
 
-		bool GetJoint() {return m_joint;}
-
+		//Get the face linked to theis face, for use with communication
 		std::shared_ptr<Face> GetLinkedFace() {return m_linkedFace;}
 
+		//Set the linked face
 		void SetLinkedface(std::shared_ptr<Face> face) {m_linkedFace = face;}
 
+		//Fire the thruster if it has been set to fire and is working
 		void FireThruster();
 
-		void Step();
-
+		//Draw the face
 		void Draw();
 
+		//Is this face external?
 		bool GetExternal() {return m_external;}
 		
-		int GetFlowID() {return m_flowID;}
-		void SetFlowID(int ID) {m_flowID = ID;}
-
-		bool GetFlowChecked() {return m_flowChecked;}
-
+		//Is the thruster firing during the current step?
 		bool GetThrusterFiring() {return m_thrusterFiring;}
 
+		//Set the thruster to fire or not
 		void SetThrusterFiring(bool fire);
 
-		bool GetThrusterStateChanged();
-
-		void SetJoint(bool joint) {m_joint = joint;}
-
+		//Run the PIDs for the centralized controller
 		void RunTransPID(float error);
 
 		void RunRotPID(float error);
@@ -67,8 +63,6 @@ class Face
 		//Linked face for communication
 		std::shared_ptr<Face> m_linkedFace;
 
-		//The vector along which the pump fires. This can be different from the actual normal if there is an error
-
 		//The unnormalized normal
 		Vector3Df m_unNormal;
 
@@ -77,8 +71,6 @@ class Face
 
 		//Position in robot coordinates
 		Vector3Df m_position;
-
-		//Vector3Df m_CoMrelativePosition;
 
 		//Does the face have a target sensor
 		bool m_targetSensor;
@@ -110,35 +102,11 @@ class Face
 		//Is the face external (on the robot - environment boundary)
 		bool m_external;
 
-		//Has this face been attached to another robot by a joint
-		bool m_joint;
-
-
-
-		//Has the flow been checked in the setting up process of the fluid routing
-		bool m_flowChecked;
-
-		//Has the thruster either stopped firing or started firing recently
-		bool m_thrusterStateChanged;
-
-		//Used for fluid routing
-
-
-		float m_flowRate;
-
-		int m_flowID;
-
-
-
 		//Faults
-
 		bool m_workingThruster;
-
-
 
 		//Threshold for target detection (90 by default)
 		float m_targetDetectionThreshold;
-
 
 		bool m_faultyTargetSensor;
 
@@ -149,7 +117,6 @@ class Face
 		bool m_faultyRangeSensorState;
 
 
-
 		//Translation PID variables
 		float m_PIDpreviousErrorTrans;
 
@@ -158,15 +125,12 @@ class Face
 		float m_PIDintegralTrans;
 
 
-
 		//Rotation PID variables
 		float m_PIDpreviousErrorRot;
 
 		float m_PIDoutputRot;
 
 		float m_PIDintegralRot;
-
-
 };
 
 #endif

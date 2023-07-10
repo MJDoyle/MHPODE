@@ -13,32 +13,36 @@ class Module
 		//Deconstructor
 		~Module();
 
+		//Get the position of the module
 		Vector3Df GetPosition() {return m_position;}
 
-		Vector3Df CoMRelativePosition() {return m_CoMrelativePosition;}
-
+		//Add a face to the module
 		void AddFace(std::shared_ptr<Face> face) {m_faces.push_back(face);}
 
+		//Draw the module
 		void Draw();
 
+		//Control step
 		void Step(Vector3Df targetPosition);
 
+		//Return the module geom
 		dGeomID& GetGeom() {return m_geom;}
 
+		//Return a list of all module faces
 		std::vector<std::shared_ptr<Face>> GetFaces() {return m_faces;}
 
-		std::shared_ptr<Face> GetOppositeFace(Vector3Df unNormal);
-
+		//Return the number of thrusters that are firing during this time step
 		int GetNumFiringThrusters();
 
 	private:
 
-		//Parameters
+		//A copy of the trial parameters
 		std::shared_ptr<Parameters> m_parameters;
 
 		//Body ID of robot
 		dBodyID m_robotBodyID;
 
+		//List of module faces
 		std::vector<std::shared_ptr<Face>> m_faces;
 
 		//This modules ODE geom ID
@@ -46,8 +50,6 @@ class Module
 
 		//This modules position in the robot in robot coordinate frame
 		Vector3Df m_position;
-
-		Vector3Df m_CoMrelativePosition;
 };
 
 
